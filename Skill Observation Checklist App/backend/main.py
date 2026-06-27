@@ -2,8 +2,8 @@ print("========== USING THIS MAIN.PY ==========")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from core.database import Base
-from core.database import engine
+from core.config import settings          # validates env vars at import time
+from core.database import Base, engine
 
 from models.user import User
 from models.child import Child
@@ -22,29 +22,35 @@ from api.notifications import router as notifications_router
 from api.activity_logs import router as activity_logs_router
 from api.dashboard import router as dashboard_router
 from api.email import router as email_router
-
-# NEW USERS ROUTER
-
 from api.users import router as users_router
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
-title="Skill Observation Checklist API",
-version="1.0.0"
+    title="Skill Observation Checklist API",
+    version="1.0.0",
+    docs_url=None if settings.is_production else "/docs",
+    redoc_url=None if settings.is_production else "/redoc",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        
-    ],
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    env = settings.NODE_ENV.upper()
+    print(f"[STARTUP] Environment  : {env}")
+    print(f"[STARTUP] JWT algorithm: {settings.ALGORITHM}")
+    print(f"[STARTUP] Token expiry : {settings.ACCESS_TOKEN_EXPIRE_MINUTES} min")
+    print(f"[STARTUP] CORS origins : {settings.ALLOWED_ORIGINS}")
+    print(f"[STARTUP] Docs UI      : {'disabled' if settings.is_production else '/docs'}")
+
+
 
 # Authentication
 

@@ -18,7 +18,8 @@ from core.security import (
     hash_password,
     verify_password,
     create_access_token,
-    verify_access_token
+    verify_access_token,
+    decode_token_or_raise,
 )
 
 from services.activity_log_service import (
@@ -152,15 +153,8 @@ def get_me(
 
     token = credentials.credentials
 
-    payload = verify_access_token(
-        token
-    )
-
-    if not payload:
-
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid or expired token"
-        )
+    # decode_token_or_raise raises HTTP 401 with specific messages for
+    # expired tokens vs invalid/tampered tokens.
+    payload = decode_token_or_raise(token)
 
     return payload
